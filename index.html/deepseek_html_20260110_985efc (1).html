@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Córdoba Security Intelligence | Sistema Profesional</title>
+    
+    <!-- SEO y Metadatos -->
+    <meta name="description" content="Sistema inteligente para venta de alarmas en toda la provincia de Córdoba">
+    <meta name="keywords" content="alarmas, seguridad, Córdoba, robos, notificaciones">
+    
+    <!-- Fuentes Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Estilos principales -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Para instalar como PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+</head>
+<body>
+    <!-- Overlay de carga -->
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Cargando Sistema de Inteligencia...</p>
+        </div>
+    </div>
+
+    <!-- Navegación principal -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <!-- Logo y título -->
+            <div class="nav-brand">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <div class="logo-text">
+                        <span class="logo-main">Córdoba Security</span>
+                        <span class="logo-sub">Intelligence Platform</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notificaciones -->
+            <div class="nav-notifications">
+                <button class="notification-btn" id="notification-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-count" id="notification-count">0</span>
+                </button>
+                <div class="notification-panel" id="notification-panel">
+                    <div class="notification-header">
+                        <h4>Alertas en Tiempo Real</h4>
+                        <button class="clear-notifications" id="clear-notifications">
+                            <i class="fas fa-trash"></i> Limpiar
+                        </button>
+                    </div>
+                    <div class="notification-list" id="notification-list">
+                        <!-- Alertas se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menú usuario -->
+            <div class="user-menu">
+                <button class="user-btn" id="user-btn">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Usuario</span>
+                </button>
+                <div class="user-dropdown">
+                    <a href="#settings"><i class="fas fa-cog"></i> Configuración</a>
+                    <a href="#stats"><i class="fas fa-chart-line"></i> Estadísticas</a>
+                    <a href="#help"><i class="fas fa-question-circle"></i> Ayuda</a>
+                    <hr>
+                    <a href="#logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Barra de búsqueda superior -->
+    <div class="search-bar-container">
+        <div class="search-container">
+            <!-- Búsqueda principal -->
+            <div class="search-main">
+                <i class="fas fa-search"></i>
+                <input type="text" id="main-search" placeholder="Buscar población, código postal, negocio...">
+                <button class="search-btn" id="search-btn">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+
+            <!-- Filtros avanzados -->
+            <div class="search-filters">
+                <select id="filter-municipio">
+                    <option value="">Todos los municipios</option>
+                    <!-- Se llenará con JavaScript -->
+                </select>
+                
+                <select id="filter-tipo">
+                    <option value="">Todos los tipos</option>
+                    <option value="residencial">Residencial</option>
+                    <option value="comercial">Comercial</option>
+                    <option value="industrial">Industrial</option>
+                    <option value="agricola">Agrícola</option>
+                </select>
+                
+                <input type="text" id="filter-cp" placeholder="Código Postal">
+                
+                <select id="filter-prioridad">
+                    <option value="">Cualquier prioridad</option>
+                    <option value="alta">Alta Prioridad</option>
+                    <option value="media">Media Prioridad</option>
+                    <option value="baja">Baja Prioridad</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout principal -->
+    <div class="main-container">
+        <!-- Sidebar izquierda -->
+        <aside class="sidebar">
+            <!-- Estadísticas rápidas -->
+            <div class="stats-widget">
+                <h3><i class="fas fa-chart-pie"></i> Resumen Provincial</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-municipios">71</span>
+                        <span class="stat-label">Municipios</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-alertas">0</span>
+                        <span class="stat-label">Alertas Hoy</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="visitas-programadas">0</span>
+                        <span class="stat-label">Visitas Programadas</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="nuevos-negocios">0</span>
+                        <span class="stat-label">Nuevos Negocios</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="quick-actions">
+                <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
+                <button class="action-btn" id="add-visita">
+                    <i class="fas fa-calendar-plus"></i> Nueva Visita
+                </button>
+                <button class="action-btn" id="add-nota">
+                    <i class="fas fa-sticky-note"></i> Nueva Nota
+                </button>
+                <button class="action-btn" id="export-data">
+                    <i class="fas fa-file-export"></i> Exportar Datos
+                </button>
+                <button class="action-btn" id="sync-data">
+                    <i class="fas fa-sync-alt"></i> Sincronizar
+                </button>
+            </div>
+
+            <!-- Agenda de hoy -->
+            <div class="agenda-widget">
+                <h3><i class="fas fa-calendar-day"></i> Agenda Hoy</h3>
+                <div class="agenda-list" id="agenda-hoy">
+                    <!-- Eventos se cargarán aquí -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <!-- Pestañas principales -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="mapa">
+                        <i class="fas fa-map-marked-alt"></i> Mapa Inteligente
+                    </button>
+                    <button class="tab-btn" data-tab="alertas">
+                        <i class="fas fa-exclamation-circle"></i> Alertas en Vivo
+                    </button>
+                    <button class="tab-btn" data-tab="negocios">
+                        <i class="fas fa-store"></i> Nuevos Negocios
+                    </button>
+                    <button class="tab-btn" data-tab="visitas">
+                        <i class="fas fa-calendar-check"></i> Visitas Programadas
+                    </button>
+                    <button class="tab-btn" data-tab="notas">
+                        <i class="fas fa-clipboard"></i> Bloc de Notas
+                    </button>
+                    <button class="tab-btn" data-tab="analytics">
+                        <i class="fas fa-chart-bar"></i> Analytics
+                    </button>
+                </div>
+
+                <!-- Contenido de pestañas -->
+                <div class="tab-content">
+                    <!-- Mapa Inteligente -->
+                    <div id="mapa-tab" class="tab-pane active">
+                        <div class="map-header">
+                            <h2><i class="fas fa-map"></i> Mapa de la Provincia de Córdoba</h2>
+                            <div class="map-controls">
+                                <button class="map-control-btn" id="zoom-in">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button class="map-control-btn" id="zoom-out">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <button class="map-control-btn" id="locate-me">
+                                    <i class="fas fa-location-arrow"></i>
+                                </button>
+                                <button class="map-control-btn" id="layer-toggle">
+                                    <i class="fas fa-layer-group"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="map"></div>
+                        <div class="map-legend">
+                            <div class="legend-item">
+                                <div class="legend-icon high-alert"></div>
+                                <span>Alta incidencia</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon medium-alert"></div>
+                                <span>Media incidencia</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon low-alert"></div>
+                                <span>Baja incidencia</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon new-business"></div>
+                                <span>Nuevo negocio</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon scheduled-visit"></div>
+                                <span>Visita programada</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alertas en Vivo -->
+                    <div id="alertas-tab" class="tab-pane">
+                        <div class="alertas-header">
+                            <h2><i class="fas fa-broadcast-tower"></i> Alertas en Tiempo Real</h2>
+                            <div class="alert-filters">
+                                <select id="filter-alerta-tipo">
+                                    <option value="todos">Todos los tipos</option>
+                                    <option value="robo">Robos</option>
+                                    <option value="intento">Intentos</option>
+                                    <option value="vandalismo">Vandalismo</option>
+                                </select>
+                                <select id="filter-alerta-zona">
+                                    <option value="todos">Todas las zonas</option>
+                                </select>
+                                <button class="btn-refresh" id="refresh-alertas">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="alertas-grid" id="alertas-grid">
+                            <!-- Alertas se cargarán aquí -->
+                        </div>
+                    </div>
+
+                    <!-- Nuevos Negocios -->
+                    <div id="negocios-tab" class="tab-pane">
+                        <div class="negocios-header">
+                            <h2><i class="fas fa-bullseye"></i> Nuevos Negocios y Oportunidades</h2>
+                            <div class="negocio-filters">
+                                <input type="text" id="search-negocio" placeholder="Buscar negocio...">
+                                <select id="filter-negocio-municipio">
+                                    <option value="">Todos los municipios</option>
+                                </select>
+                                <select id="filter-negocio-sector">
+                                    <option value="">Todos los sectores</option>
+                                    <option value="restaurante">Restauración</option>
+                                    <option value="comercio">Comercio</option>
+                                    <option value="industrial">Industrial</option>
+                                    <option value="servicios">Servicios</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="negocios-list" id="negocios-list">
+                            <!-- Negocios se cargarán aquí -->
+                        </div>
+                    </div>
+
+                    <!-- Visitas Programadas -->
+                    <div id="visitas-tab" class="tab-pane">
+                        <div class="visitas-header">
+                            <h2><i class="fas fa-route"></i> Agenda de Visitas</h2>
+                            <div class="visitas-actions">
+                                <button class="btn-primary" id="nueva-visita-modal">
+                                    <i class="fas fa-plus"></i> Programar Visita
+                                </button>
+                                <button class="btn-secondary" id="sync-calendar">
+                                    <i class="fab fa-google"></i> Sinc. Google Calendar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="calendar-container">
+                            <div class="calendar" id="calendar"></div>
+                            <div class="visitas-list" id="visitas-list">
+                                <!-- Visitas se cargarán aquí -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloc de Notas -->
+                    <div id="notas-tab" class="tab-pane">
+                        <div class="notas-header">
+                            <h2><i class="fas fa-book"></i> Bloc de Notas Inteligente</h2>
+                            <div class="notas-actions">
+                                <button class="btn-primary" id="nueva-nota">
+                                    <i class="fas fa-plus"></i> Nueva Nota
+                                </button>
+                                <button class="btn-secondary" id="organizar-notas">
+                                    <i class="fas fa-folder"></i> Organizar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="notas-container">
+                            <div class="notas-sidebar">
+                                <div class="notas-categories">
+                                    <h4>Categorías</h4>
+                                    <ul>
+                                        <li class="active" data-category="all"><i class="fas fa-list"></i> Todas</li>
+                                        <li data-category="visitas"><i class="fas fa-calendar"></i> Visitas</li>
+                                        <li data-category="clientes"><i class="fas fa-users"></i> Clientes</li>
+                                        <li data-category="ideas"><i class="fas fa-lightbulb"></i> Ideas</li>
+                                        <li data-category="seguimiento"><i class="fas fa-chart-line"></i> Seguimiento</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="notas-editor">
+                                <div class="notas-list" id="notas-list">
+                                    <!-- Notas se cargarán aquí -->
+                                </div>
+                                <div class="nota-editor" id="nota-editor">
+                                    <div class="editor-header">
+                                        <input type="text" id="nota-title" placeholder="Título de la nota">
+                                        <select id="nota-category">
+                                            <option value="general">General</option>
+                                            <option value="visitas">Visitas</option>
+                                            <option value="clientes">Clientes</option>
+                                            <option value="ideas">Ideas</option>
+                                        </select>
+                                    </div>
+                                    <textarea id="nota-content" placeholder="Escribe tu nota aquí..."></textarea>
+                                    <div class="editor-footer">
+                                        <button class="btn-primary" id="save-nota">
+                                            <i class="fas fa-save"></i> Guardar
+                                        </button>
+                                        <button class="btn-secondary" id="clear-nota">
+                                            <i class="fas fa-times"></i> Limpiar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics -->
+                    <div id="analytics-tab" class="tab-pane">
+                        <div class="analytics-header">
+                            <h2><i class="fas fa-chart-network"></i> Panel de Analytics</h2>
+                            <div class="analytics-filters">
+                                <select id="analytics-period">
+                                    <option value="7d">Últimos 7 días</option>
+                                    <option value="30d">Últimos 30 días</option>
+                                    <option value="90d">Últimos 90 días</option>
+                                    <option value="ytd">Año en curso</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="analytics-grid">
+                            <div class="metric-card">
+                                <h4>Tasa de Conversión</h4>
+                                <div class="metric-value" id="conversion-rate">0%</div>
+                                <div class="metric-trend up">
+                                    <i class="fas fa-arrow-up"></i> 12%
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <h4>Visitas Realizadas</h4>
+                                <div class="metric-value" id="visitas-realizadas">0</div>
+                                <div class="metric-trend down">
+                                    <i class="fas fa-arrow-down"></i> 5%
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <h4>Ticket Promedio</h4>
+                                <div class="metric-value" id="ticket-promedio">€0</div>
+                                <div class="metric-trend up">
+                                    <i class="fas fa-arrow-up"></i> 8%
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <h4>Municipios Cubiertos</h4>
+                                <div class="metric-value" id="municipios-cubiertos">0/71</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="coverage-progress"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="charts-container">
+                            <div class="chart-card">
+                                <h4>Incidencias por Municipio</h4>
+                                <canvas id="chart-incidencias"></canvas>
+                            </div>
+                            <div class="chart-card">
+                                <h4>Evolución de Ventas</h4>
+                                <canvas id="chart-ventas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para nueva visita -->
+    <div class="modal" id="visita-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus"></i> Programar Nueva Visita</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="visita-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="visita-cliente"><i class="fas fa-user"></i> Cliente/Negocio</label>
+                            <input type="text" id="visita-cliente" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="visita-municipio"><i class="fas fa-map-marker-alt"></i> Municipio</label>
+                            <select id="visita-municipio" required>
+                                <!-- Se llenará con JavaScript -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="visita-fecha"><i class="fas fa-calendar"></i> Fecha</label>
+                            <input type="date" id="visita-fecha" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="visita-hora"><i class="fas fa-clock"></i> Hora</label>
+                            <input type="time" id="visita-hora" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="visita-direccion"><i class="fas fa-map-pin"></i> Dirección Completa</label>
+                        <input type="text" id="visita-direccion" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="visita-motivo"><i class="fas fa-clipboard-list"></i> Motivo</label>
+                        <select id="visita-motivo" required>
+                            <option value="propuesta">Presentación de Propuesta</option>
+                            <option value="instalacion">Instalación</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                            <option value="seguimiento">Seguimiento</option>
+                            <option value="cotizacion">Cotización</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="visita-notas"><i class="fas fa-sticky-note"></i> Notas Adicionales</label>
+                        <textarea id="visita-notas" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-close">Cancelar</button>
+                <button class="btn-primary" id="save-visita">
+                    <i class="fas fa-save"></i> Guardar Visita
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio para notificaciones -->
+    <audio id="notification-sound" preload="auto">
+        <source src="assets/sounds/notification.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Córdoba Security Intelligence</h4>
+                <p>Sistema profesional para venta de alarmas</p>
+            </div>
+            <div class="footer-section">
+                <p>© 2024 - Provincia de Córdoba</p>
+                <p id="last-update">Última actualización: <span id="update-time">--:--</span></p>
+            </div>
+            <div class="footer-section">
+                <div class="connection-status">
+                    <i class="fas fa-wifi" id="connection-icon"></i>
+                    <span id="connection-status">Conectado</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/es.min.js"></script>
+    
+    <!-- Nuestros scripts -->
+    <script src="data-province.js"></script>
+    <script src="app.js"></script>
+    
+    <!-- Inicializar Service Worker para notificaciones -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error SW:', err));
+        }
+    </script>
+</body>
+</html>
